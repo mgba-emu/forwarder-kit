@@ -1,0 +1,9 @@
+[submodule "Project_CTR"]
+	path = Project_CTR
+	url = https://github.com/3DSGuy/Project_CTR
+[submodule "3dstool"]
+	path = 3dstool
+	url = https://github.com/dnasdw/3dstool.git
+[submodule "bannertool"]
+	path = bannertool
+	url = https://github.com/deltabeard/bannertool.git
