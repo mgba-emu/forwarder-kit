@@ -17,6 +17,15 @@ ifneq ($(CMAKE_TOOLCHAIN_FILE),)
   CMAKE_EXTRA = && cmake . $(CMAKE_CXX_FLAGS) $(CMAKE_EXE_LINKER_FLAGS) $(CMAKE_CXX_STANDARD_LIBRARIES)
 endif
 
+ifneq ($(MACSYS),)
+  CMAKE_EXE_LINKER_FLAGS := -DCMAKE_EXE_LINKER_FLAGS="-L$(MACSYS)/lib"
+  CMAKE_CXX_STANDARD_LIBRARIES := -DCMAKE_CXX_STANDARD_LIBRARIES="-lz -framework Security -framework SystemConfiguration -framework Foundation"
+  ARCHFLAGS := -arch $(ARCH)
+  ARCHFLAGS2 := $(ARCHFLAGS)
+  LIB := -liconv
+  CMAKE_EXTRA = -DCMAKE_OSX_ARCHITECTURES="$(ARCH)" && cmake . $(CMAKE_EXE_LINKER_FLAGS) $(CMAKE_CXX_STANDARD_LIBRARIES)
+endif
+
 STRIP = $(CROSS_PREFIX)strip
 AR = $(CROSS_PREFIX)ar
 
@@ -30,26 +39,30 @@ ctrtool: bin/ctrtool$(SUFFIX)
 makerom: bin/makerom$(SUFFIX)
 
 bin/bannertool$(SUFFIX):
-	$(MAKE) -C bannertool CC=$(CC) CXX=$(CXX) LDFLAGS="-static-libgcc -static-libstdc++"
-	install -Dm755 bannertool/bannertool.elf bin/bannertool$(SUFFIX)
+	$(MAKE) -C bannertool CC=$(CC) CXX=$(CXX) LDFLAGS="$(ARCHFLAGS)" CFLAGS="-O2 -std=gnu11 -Wall $(ARCHFLAGS)"
+	install -d bin
+	install -m755 bannertool/bannertool.elf bin/bannertool$(SUFFIX)
 	$(STRIP) bin/bannertool$(SUFFIX)
 
 bin/ctrtool$(SUFFIX):
 	ARCHFLAGS="$(ARCHFLAGS2)" CC=$(CC) CXX=$(CXX) INC=-I$(SHIMS) $(MAKE) -C Project_CTR/ctrtool deps PROJECT_PLATFORM=foo ARFLAGS=cr
 	ARCHFLAGS="$(ARCHFLAGS2)" CC=$(CC) CXX=$(CXX) INC=-I$(SHIMS) $(MAKE) -C Project_CTR/ctrtool PROJECT_PLATFORM=foo ARFLAGS=cr
-	install -Dm755 -t bin Project_CTR/ctrtool/bin/ctrtool$(SUFFIX)
+	install -d bin
+	install -m755 Project_CTR/ctrtool/bin/ctrtool$(SUFFIX) bin
 	$(STRIP) bin/ctrtool$(SUFFIX)
 
 bin/makerom$(SUFFIX):
-	ARCHFLAGS="$(ARCHFLAGS)" CC=$(CC) CXX=$(CXX) INC=-I$(SHIMS) $(MAKE) -C Project_CTR/makerom deps PROJECT_PLATFORM=foo ARFLAGS=cr
-	ARCHFLAGS="$(ARCHFLAGS)" CC=$(CC) CXX=$(CXX) INC=-I$(SHIMS) $(MAKE) -C Project_CTR/makerom PROJECT_PLATFORM=foo ARFLAGS=cr
-	install -Dm755 -t bin Project_CTR/makerom/bin/makerom$(SUFFIX)
+	CC=$(CC) CXX=$(CXX) INC=-I$(SHIMS) LIB=$(LIB) $(MAKE) ARCHFLAGS="$(ARCHFLAGS)" -C Project_CTR/makerom deps PROJECT_PLATFORM=foo ARFLAGS=cr
+	CC=$(CC) CXX=$(CXX) INC=-I$(SHIMS) LIB=$(LIB) $(MAKE) ARCHFLAGS="$(ARCHFLAGS)" -C Project_CTR/makerom PROJECT_PLATFORM=foo ARFLAGS=cr
+	install -d bin
+	install -m755 Project_CTR/makerom/bin/makerom$(SUFFIX) bin
 	$(STRIP) bin/makerom$(SUFFIX)
 
 bin/3dstool$(SUFFIX):
 	cd 3dstool && cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=$(CMAKE_TOOLCHAIN_FILE) $(CMAKE_EXTRA)
 	cmake --build 3dstool
-	install -Dm755 -t bin 3dstool/bin/Release/3dstool$(SUFFIX)
+	install -d bin
+	install -m755 3dstool/bin/Release/3dstool$(SUFFIX) bin
 	$(STRIP) bin/3dstool$(SUFFIX)
 
 bin/libwinpthread-1.dll:
